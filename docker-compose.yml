@@ -1,0 +1,22 @@
+version: '3.9'
+services:
+  server:
+    container_name: chat_app_server
+    platform: linux/amd64
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    volumes:
+      - ./server:/app
+    ports:
+      - 9000:9000
+  client:
+    container_name: chat_app_client
+    platform: linux/amd64
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    volumes:
+      - ./client:/app
+    ports:
+      - 3000:3000
