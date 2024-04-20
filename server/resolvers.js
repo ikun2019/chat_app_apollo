@@ -10,11 +10,24 @@ export const resolvers = {
   },
 
   Mutation: {
-    addMessage: (_root, { text }, { user }) => {
+    addMessage: async (_root, { text }, { user, pubsub }) => {
       if (!user) throw unauthorizedError();
-      return createMessage(user, text);
+      const message = await createMessage(user, text);
+      pubsub.publish('MESSAGE_ADDED', message);
+      return message;
     },
   },
+
+  Subscription: {
+    messageAdded: {
+      subscribe: (parent, args, context) => {
+        return context.pubsub.asyncIterator('MESSAGE_ADDED');
+      },
+      resolve: (payload) => {
+        return payload;
+      },
+    }
+  }
 };
 
 function unauthorizedError() {

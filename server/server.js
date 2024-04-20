@@ -12,6 +12,10 @@ import { resolvers } from './resolvers.js';
 
 const PORT = 9000;
 
+// * Subscriptions
+import { PubSub } from 'graphql-subscriptions';
+const pubsub = new PubSub();
+
 // * Serverの初期化
 const app = express();
 const httpServer = new createServer(app);
@@ -20,12 +24,18 @@ app.use(cors(), express.json());
 
 app.post('/login', handleLogin);
 
-function getContext({ req }) {
-  if (req.auth) {
-    return { user: req.auth.sub };
-  }
-  return {};
-}
+// function getContext({ req }) {
+//   if (req.auth) {
+//     return { user: req.auth.sub };
+//   }
+//   return {};
+// }
+
+const getContext = ({ req, res }) => ({
+  ...req,
+  pubsub,
+  user: req && req.auth ? req.auth.sub : null,
+});
 
 const typeDefs = await readFile('./schema.graphql', 'utf8');
 const schema = makeExecutableSchema({ typeDefs, resolvers });
