@@ -21,6 +21,8 @@ export const resolvers = {
   Subscription: {
     messageAdded: {
       subscribe: (parent, args, context) => {
+        console.log('[messageAdded] context', context);
+        if (!user) throw unauthorizedError();
         return context.pubsub.asyncIterator('MESSAGE_ADDED');
       },
       resolve: (payload) => {

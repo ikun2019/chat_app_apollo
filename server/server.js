@@ -7,7 +7,7 @@ import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { readFile } from 'node:fs/promises';
-import { authMiddleware, handleLogin } from './auth.js';
+import { authMiddleware, decodeToken, handleLogin } from './auth.js';
 import { resolvers } from './resolvers.js';
 
 const PORT = 9000;
@@ -31,11 +31,20 @@ app.post('/login', handleLogin);
 //   return {};
 // }
 
-const getContext = ({ req, res }) => ({
+const getHttpContext = ({ req, res }) => ({
   ...req,
   pubsub,
   user: req && req.auth ? req.auth.sub : null,
 });
+
+const getWsContext = ({ connectionParams }) => {
+  const accessToken = connectionParams.accessToken;
+  if (accessToken) {
+    const payload = decodeToken(accessToken);
+    return { user: payload.sub };
+  }
+  return {};
+};
 
 const typeDefs = await readFile('./schema.graphql', 'utf8');
 const schema = makeExecutableSchema({ typeDefs, resolvers });
@@ -45,12 +54,12 @@ const apolloServer = new ApolloServer({ schema });
 await apolloServer.start();
 // * ApolloとExpressの連結
 app.use('/graphql', authMiddleware, apolloMiddleware(apolloServer, {
-  context: getContext,
+  context: getHttpContext,
 }));
 // * WebSocketの設定
 useServer({
   schema,
-  context: getContext,
+  context: getWsContext,
 }, webServer);
 
 httpServer.listen({ port: PORT }, () => {
